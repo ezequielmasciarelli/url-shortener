@@ -1,24 +1,41 @@
 package repositories
 
-import controllers.ShortenRequest
-import database.Data
+import controllers.{
+  ApplicationResult,
+  DuplicatedAlias,
+  NotFound,
+  ShortenRequest
+}
 import database.Data._
 import javax.inject.Singleton
 import slick.jdbc.MySQLProfile.api._
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
 class UrlRepository {
-  val query = Data.urls.schema.createIfNotExists
 
-  def get(alias: String): Future[Option[UrlEntity]] = {
+  def get: String => ApplicationResult[UrlEntity] = { alias =>
     val query = urls.filter(_.shortUrl === alias).take(1).result.headOption
-    db.run(query)
+    db.run(query) map {
+      case Some(value) => Right(value)
+      case None        => Left(NotFound)
+    }
   }
 
-  def save(request: ShortenRequest): Future[Int] = {
+  def exists: String => Future[Boolean] =
+    get andThen { futureRow =>
+      for {
+        row <- futureRow
+      } yield row.isRight
+    }
+
+  def save: ShortenRequest => ApplicationResult[Unit] = { request =>
     val query = urls += UrlEntity(request.url, request.alias)
-    db.run(query)
+    for {
+      hasDuplicatedAlias <- exists(request.alias)
+      result <- if (!hasDuplicatedAlias) db.run(query) else Future.successful(0)
+    } yield if (result == 1) Right(()) else Left(DuplicatedAlias)
   }
 }

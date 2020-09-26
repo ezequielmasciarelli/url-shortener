@@ -3,6 +3,7 @@ package database
 import slick.jdbc.MySQLProfile.api._
 
 object Data {
+
   val db = Database.forConfig("mydb")
 
   case class UrlEntity(originalUrl: String, shortUrl: String, id: Long = 0)

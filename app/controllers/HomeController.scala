@@ -3,7 +3,6 @@ package controllers
 import io.circe._
 import io.circe.generic.auto._
 import io.circe.parser._
-import io.circe.syntax._
 import javax.inject._
 import play.api.mvc._
 import repositories.UrlRepository
@@ -17,12 +16,7 @@ class HomeController @Inject() (
     val urlRepository: UrlRepository
 ) extends BaseController {
 
-  def index(): Action[AnyContent] =
-    Action { implicit request: Request[AnyContent] =>
-      Ok(views.html.index())
-    }
-
-  def decodeBody[T](
+  private def decodeBody[T](
       request: Request[AnyContent]
   )(implicit decoder: Decoder[T]): Option[T] = {
     request.body.asJson.map(_.toString).map(decode[T]) collect {
@@ -30,30 +24,26 @@ class HomeController @Inject() (
     }
   }
 
-  def shorten(): Action[AnyContent] =
+  def shorten: Action[AnyContent] =
     Action.async { implicit request =>
       decodeBody[ShortenRequest](request)
         .map { body =>
           urlRepository
             .save(body)
-            .map(_ => Ok)
+            .map {
+              case Right(_)              => Ok(s"http://localhost:9000/api/${body.alias}")
+              case Left(DuplicatedAlias) => BadRequest("El alias ya existe")
+              case _                     => InternalServerError
+            }
         }
         .getOrElse(Future.successful(BadRequest))
     }
 
   def get(alias: String): Action[AnyContent] =
     Action.async {
-      urlRepository.get(alias).map {
-        case Some(value) => Ok(value.asJson.toString)
-        case None        => NotFound
-      }
-    }
-
-  def getWithRedirect(alias: String): Action[AnyContent] =
-    Action.async {
-      urlRepository.get(alias).map {
-        case Some(value) => MovedPermanently(value.originalUrl)
-        case None        => NotFound
+      urlRepository.get(alias) map {
+        case Right(value) => MovedPermanently(value.originalUrl)
+        case Left(error)  => NotFound
       }
     }
 }

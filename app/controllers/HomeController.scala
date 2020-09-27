@@ -1,8 +1,6 @@
 package controllers
 
-import io.circe._
 import io.circe.generic.auto._
-import io.circe.parser._
 import javax.inject._
 import play.api.mvc._
 import repositories.UrlRepository
@@ -15,14 +13,6 @@ class HomeController @Inject() (
     val controllerComponents: ControllerComponents,
     val urlRepository: UrlRepository
 ) extends BaseController {
-
-  private def decodeBody[T](
-      request: Request[AnyContent]
-  )(implicit decoder: Decoder[T]): Option[T] = {
-    request.body.asJson.map(_.toString).map(decode[T]) collect {
-      case Right(parsedBody) => parsedBody
-    }
-  }
 
   def shorten: Action[AnyContent] =
     Action.async { implicit request =>

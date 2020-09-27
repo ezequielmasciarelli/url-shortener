@@ -11,31 +11,30 @@ import javax.inject.Singleton
 import slick.jdbc.MySQLProfile.api._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 @Singleton
 class UrlRepository {
 
+  private def getQuery(alias: String) =
+    urls.filter(_.shortUrl === alias).take(1).result.headOption
+
+  private def insertIfNotExists(request: ShortenRequest) =
+    getQuery(request.alias).flatMap {
+      case Some(_) => DBIO.successful(0)
+      case None    => urls += UrlEntity(request.url, request.alias)
+    }.transactionally
+
   def get: String => ApplicationResult[UrlEntity] = { alias =>
-    val query = urls.filter(_.shortUrl === alias).take(1).result.headOption
-    db.run(query) map {
+    db.run(getQuery(alias)) map {
       case Some(value) => Right(value)
       case None        => Left(NotFound)
     }
   }
 
-  def exists: String => Future[Boolean] =
-    get andThen { futureRow =>
-      for {
-        row <- futureRow
-      } yield row.isRight
-    }
-
   def save: ShortenRequest => ApplicationResult[Unit] = { request =>
-    val query = urls += UrlEntity(request.url, request.alias)
-    for {
-      hasDuplicatedAlias <- exists(request.alias)
-      result <- if (!hasDuplicatedAlias) db.run(query) else Future.successful(0)
-    } yield if (result == 1) Right(()) else Left(DuplicatedAlias)
+    db.run(insertIfNotExists(request)) map {
+      case 1 => Right(())
+      case _ => Left(DuplicatedAlias)
+    }
   }
 }

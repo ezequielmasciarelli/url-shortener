@@ -8,14 +8,18 @@ import controllers.{
 }
 import database.Data._
 import javax.inject.Singleton
+import slick.dbio.Effect
 import slick.jdbc.MySQLProfile.api._
+import slick.sql.SqlAction
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
 class UrlRepository {
 
-  private def getQuery(alias: String) =
+  private def getQuery(
+      alias: String
+  ): SqlAction[Option[UrlEntity], NoStream, Effect.Read] =
     urls.filter(_.shortUrl === alias).take(1).result.headOption
 
   private def insertIfNotExists(request: ShortenRequest) =

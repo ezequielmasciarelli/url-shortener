@@ -4,6 +4,7 @@ import io.circe.generic.auto._
 import javax.inject._
 import play.api.mvc._
 import repositories.UrlRepository
+import io.circe.syntax._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -21,9 +22,15 @@ class HomeController @Inject() (
           urlRepository
             .save(body)
             .map {
-              case Right(_)              => Ok(s"http://localhost:9000/api/${body.alias}")
-              case Left(DuplicatedAlias) => BadRequest("El alias ya existe")
-              case _                     => InternalServerError
+              case Right(_) =>
+                Ok(
+                  Response(
+                    s"http://localhost:9000/api/${body.alias}"
+                  ).asJson.toString
+                )
+              case Left(DuplicatedAlias) =>
+                BadRequest(ErrorMessage("El alias ya existe").asJson.toString)
+              case _ => InternalServerError
             }
         }
         .getOrElse(Future.successful(BadRequest))
@@ -33,7 +40,7 @@ class HomeController @Inject() (
     Action.async {
       urlRepository.get(alias) map {
         case Right(value) => MovedPermanently(value.originalUrl)
-        case Left(error)  => NotFound
+        case Left(_)      => NotFound
       }
     }
 }

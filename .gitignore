@@ -1,10 +1,36 @@
-logs
-target
-/.idea
-/.idea_modules
-/.classpath
-/.project
-/.settings
-/RUNNING_PID
-/.g8
+back/logs
+back/target
+back/.idea
+back/.idea_modules
+back/.classpath
+back/.project
+back/.settings
+back/RUNNING_PID
+back/.g8
+back/project/target
+back/project/project/target
 
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+front/node_modules
+front/.pnp
+front/.pnp.js
+
+# testing
+front/coverage
+
+# production
+front/build
+
+# misc
+front/.DS_Store
+front/.env.local
+front/.env.development.local
+front/.env.test.local
+front/.env.production.local
+
+front/npm-debug.log*
+front/yarn-debug.log*
+front/yarn-error.log*
+.idea/

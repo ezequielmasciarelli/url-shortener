@@ -13,9 +13,12 @@ import slick.jdbc.MySQLProfile.api._
 import slick.sql.SqlAction
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 @Singleton
 class UrlRepository {
+
+  def start: Future[Unit] = db.run(urls.schema.createIfNotExists)
 
   private def getQuery(
       alias: String

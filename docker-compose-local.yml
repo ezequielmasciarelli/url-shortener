@@ -1,0 +1,37 @@
+version: '2'
+
+services:
+  back:
+    command: "sbt run"
+    image: mozilla/sbt
+    container_name: back
+    volumes:
+      - ./back:/app
+    stdin_open: true
+    working_dir: "/app"
+    ports:
+      - "9000:9000"
+    environment:
+      - MYSQL_HOST=jdbc:mysql://db:3306/url_shortener
+      - MYSQL_PASS=root
+  front:
+    command: bash -c "npm i && npm start"
+    image: "node:latest"
+    container_name: front
+    volumes:
+      - ./front:/app
+    working_dir: "/app"
+    ports:
+      - "3000:3000"
+    stdin_open: true
+  db:
+    image: mysql:latest
+    ports:
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      - MYSQL_USER=root
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - ./mysql/init:/docker-entrypoint-initdb.d/:ro

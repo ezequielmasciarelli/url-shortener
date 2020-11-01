@@ -39,7 +39,7 @@ class HomeController @Inject() (
   def get(alias: String): Action[AnyContent] =
     Action.async {
       urlRepository.get(alias) map {
-        case Right(value) => MovedPermanently(value.originalUrl)
+        case Right(value) => TemporaryRedirect(value.originalUrl)
         case Left(_)      => NotFound
       }
     }
